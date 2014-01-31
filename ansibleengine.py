@@ -16,7 +16,7 @@ class AnsibleEngine:
         self.playThread = None
 
     def listInventoryFiles(self):
-        return glob.glob(self.base + "*.inv")
+        return glob.glob(os.path.join(self.base, "*.inv"))
        
     def runRaw(self, command):
         pass
@@ -87,7 +87,7 @@ class AnsibleEngine:
         return allHosts
 
     def listPlaybooks(self):
-        return glob.glob(self.base + "*.yml")
+        return glob.glob(os.path.join(self.base, "*.yml"))
 
 class EngineRunnerCallbacks(callbacks.DefaultRunnerCallbacks):
     def __init__(self):

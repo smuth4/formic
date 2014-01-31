@@ -1,14 +1,12 @@
+import os
+import ConfigParser
 from flask import Flask
 from flask import render_template, jsonify, request, redirect, url_for
 import ansibleengine
 import ansible
 from ansible import callbacks
-import os
 
 app = Flask(__name__)
-
-base = "/home/kannibalox/ansible/"
-engine = ansibleengine.AnsibleEngine(base)
 
 @app.route("/")
 @app.route("/inventories")
@@ -37,6 +35,22 @@ def watchPlaybook():
 @app.route("/playbooks/run/status")
 def runningPlaybookStatus():
     return jsonify(engine.getPlaybookStatus())
+
+def getConfig():
+    global engine
+    config_defaults = {
+        "Bind": "127.0.0.1",
+        "Base": os.path.dirname(os.path.realpath(__file__)),
+        }
+    config = ConfigParser.SafeConfigParser(config_defaults)
+    config.read('formic.ini')
+    
+    base = config.get('Ansible', 'Base') 
+    global bind
+    bind = config.get('Web', 'Bind')
+    
+    engine = ansibleengine.AnsibleEngine(base)
     
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', debug=True)
+    getConfig()
+    app.run(host=bind, debug=True)
