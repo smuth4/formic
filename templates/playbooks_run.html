@@ -19,5 +19,13 @@
 {% endblock %}
 {% block script %}
 <script type="text/javascript">
+$(document).ready(function () {
+  if ("{{ default_i }}".length) {
+    $('#inventorySelect option:contains("{{ default_i }}")').prop('selected',true);
+  }
+  if ("{{ default_p }}".length) {
+    $('#playbookSelect option:contains("{{ default_p }}")').prop('selected',true);
+  }
+});
 </script>
 {% endblock %}

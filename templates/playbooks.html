@@ -10,9 +10,11 @@
 {% for p in playbooks %}
 <tr>
   <td>{{ p }}</td>
-  <td><button type="button" class="btn btn-default btn-xs">
+  <td>
+    <a href="{{ url_for("runPlaybook", p=p) }}"
+    <button type="button" class="btn btn-default btn-xs">
     <span class="glyphicon glyphicon-play"></span> Play
-    </button>
+    </button></a>
   </td>
 </tr>
 {% endfor %}

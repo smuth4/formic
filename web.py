@@ -23,10 +23,17 @@ def playbooks():
 
 @app.route("/playbooks/run", methods=['POST', 'GET'])
 def runPlaybook():
+    return render_template('playbooks_run.html',
+                           playbooks=engine.listPlaybooks(),
+                           inventories=engine.listInventoryFiles(),
+                           default_p=request.args.get('p', ''),
+                           default_i=request.args.get('i', ''))
+
+def launchPlaybook():
     if request.method == "POST":
         engine.runPlaybook(request.form['inventory'], request.form['playbook'])
         return redirect(url_for('watchPlaybook'))
-    return render_template('playbooks_run.html', playbooks=engine.listPlaybooks(), inventories=engine.listInventoryFiles())
+    return redirect(url_for('runbPlaybook'))
 
 @app.route("/playbooks/watch")
 def watchPlaybook():
