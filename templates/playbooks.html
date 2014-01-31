@@ -1,10 +1,10 @@
 {% extends "layout.html" %}
-{% block title %}Inventories{% endblock %}
+{% block title %}Playbooks{% endblock %}
 {% block body %}
-<div class="page-header"><h1>Inventory Sources</h1></div>
+<div class="page-header"><h1>Playbooks</h1></div>
 <ul class="list-group">
-{% for i in inventories %}
-<li class="list-group-item">{{ i }}</li>
+{% for p in playbooks %}
+<li class="list-group-item">{{ p }}</li>
 {% endfor %}
 </lu>
 {% endblock %}

@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block title %}Run Playbook{% endblock %}
+{% block body %}
+<div class="page-header"><h1>Run Playbook</h1></div>
+<form role="form" action="#" method="POST">
+<div class="form-group">
+<label for="playbookSelect">Playbook: </label>
+<select name="playbook" id="playbookSelect" class="form-control">
+{% for p in playbooks %}<option>{{ p }}</option>{% endfor %}
+</select>
+<label for="inventorySelect">Playbook: </label>
+<select name="inventory" id="inventorySelect" class="form-control">
+{% for i in inventories %}<option>{{ i }}</option>{% endfor %}
+</select>
+</div>
+<button type="submit" class="btn btn-primary pull-right">Run</button>
+</form>
+{% endblock %}
+{% block script %}
+<script type="text/javascript">
+</script>
+{% endblock %}
