@@ -21,7 +21,7 @@ def hosts():
 def playbooks():
     return render_template('playbooks.html', playbooks=engine.listPlaybooks())
 
-@app.route("/playbooks/run", methods=['POST', 'GET'])
+@app.route("/playbooks/run")
 def runPlaybook():
     return render_template('playbooks_run.html',
                            playbooks=engine.listPlaybooks(),
@@ -29,11 +29,12 @@ def runPlaybook():
                            default_p=request.args.get('p', ''),
                            default_i=request.args.get('i', ''))
 
+@app.route("/playbooks/launch", methods=['POST'])
 def launchPlaybook():
     if request.method == "POST":
         engine.runPlaybook(request.form['inventory'], request.form['playbook'])
         return redirect(url_for('watchPlaybook'))
-    return redirect(url_for('runbPlaybook'))
+    return redirect(url_for('runPlaybook'))
 
 @app.route("/playbooks/watch")
 def watchPlaybook():

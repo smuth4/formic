@@ -16,8 +16,34 @@ class AnsibleEngine:
         self.playThread = None
 
     def listInventoryFiles(self):
+        return [ os.path.basename(f.replace(self.base, '')) for f in self.__listInventoryFiles() ]
+
+    def __listInventoryFiles(self):
         return glob.glob(os.path.join(self.base, "*.inv"))
-       
+
+    def listPlaybooks(self):
+        return [ os.path.basename(f.replace(self.base, '')) for f in self.__listPlaybooks() ]
+
+    def __listPlaybooks(self):
+        return glob.glob(os.path.join(self.base, "*.yml"))
+
+    def listHosts(self, groups=False):
+        allHosts = {}
+        for invFile in self.__listInventoryFiles():
+            try:
+                inv = ansible.inventory.Inventory(invFile)
+            except errors.AnsibleError:
+                allHosts = []
+            hosts = inv.list_hosts()
+            if len(hosts) == 0:
+                continue
+            for h in hosts:
+                if groups:
+                    allHosts[h] = [g.name for g in inv.groups_for_host(h) if g.name != "all"]
+                else:
+                    allHosts[h] = []
+        return allHosts
+
     def runRaw(self, command):
         pass
 
@@ -34,13 +60,13 @@ class AnsibleEngine:
     # internal command that does all the threaded lifting
     def __runPlaybook(self, inventory, playbook):
         t = []
-        inv = ansible.inventory.Inventory(inventory)
+        inv = ansible.inventory.Inventory(os.path.join(self.base, inventory))
         inv.set_playbook_basedir(self.base)
         stats = callbacks.AggregateStats()
         playbook_cb = EnginePlaybookCallbacks(self.playbookStatus, verbose=utils.VERBOSITY)
-        runner_cb = EngineRunnerCallbacks()
+        runner_cb = EngineRunnerCallbacks(self.playbookStatus)
         pb = ansible.playbook.PlayBook(
-            playbook=playbook,
+            playbook=os.path.join(self.base, playbook),
             inventory=inv,
             stats=stats,
             callbacks=playbook_cb,
@@ -56,11 +82,12 @@ class AnsibleEngine:
                     t += [task.name]
         try:
             pb.run()
-            self.playbookStatus['status'] = "Stopped"
+            self.playbookStatus['status'] = "Finished"
             print str(pb.stats)
         except errors.AnsibleError, e:
-            print "Ansible error"
-        # Clear cache
+            print "Exited witth error"
+            self.playbookStatus['status'] = "Finished - Error"
+        # Clear host cache
         for host in self.listHosts():
             try:
                 del pb.SETUP_CACHE[host]
@@ -69,30 +96,30 @@ class AnsibleEngine:
         pb = None
         return t
 
-    def listHosts(self, groups=False):
-        allHosts = {}
-        for invFile in self.listInventoryFiles():
-            try:
-                inv = ansible.inventory.Inventory(invFile)
-            except errors.AnsibleError:
-                allHosts = []
-            hosts = inv.list_hosts()
-            if len(hosts) == 0:
-                continue
-            for h in hosts:
-                if groups:
-                    allHosts[h] = [g.name for g in inv.groups_for_host(h) if g.name != "all"]
-                else:
-                    allHosts[h] = []
-        return allHosts
-
-    def listPlaybooks(self):
-        return glob.glob(os.path.join(self.base, "*.yml"))
-
 class EngineRunnerCallbacks(callbacks.DefaultRunnerCallbacks):
-    def __init__(self):
+    def __init__(self, statusDict):
+        self.status = statusDict
         super(EngineRunnerCallbacks, self).__init__()
 
+    def on_ok(self, host, res):
+        self.status["log"].append("OK - %s" % host)
+        super(EngineRunnerCallbacks, self).on_ok()
+
+    def on_no_hosts(self):
+        self.status["log"].append("No hosts!")
+        super(EngineRunnerCallbacks, self).on_no_hosts()
+
+    def on_skipped(self, host, item=None):
+        msg = ''
+        if item:
+            msg = "Skipping: %s => (item=%s)" % (host, item)
+        else:
+            msg = "Skipping: %s" % host
+        self.status["log"].append(msg)
+        super(EngineRunnerCallbacks, self).on_skipped(host, item)
+
+
+    
 class EnginePlaybookCallbacks(callbacks.PlaybookCallbacks):
     def __init__(self, statusDict, verbose=False):
         self.status = statusDict
@@ -107,7 +134,7 @@ class EnginePlaybookCallbacks(callbacks.PlaybookCallbacks):
         super(EnginePlaybookCallbacks, self).on_notify(host, handler)
 
     def on_no_hosts_matched(self):
-        callbacks.display("skipping: no hosts matched", color='cyan')
+        self.status['log'].append("No hosts matched")
         callbacks.call_callback_module('playbook_on_no_hosts_matched')
 
     def on_no_hosts_remaining(self):
@@ -163,9 +190,8 @@ class EnginePlaybookCallbacks(callbacks.PlaybookCallbacks):
         return result
 
     def on_setup(self):
-        self.status['log'].append("Gather facts on hosts")
+        self.status['log'].append("Gather host facts")
         self.status['status'] = "Gathering facts"
-        callbacks.display(callbacks.banner("GATHERING FACTS"))
         callbacks.call_callback_module('playbook_on_setup')
 
     def on_import_for_host(self, host, imported_file):
@@ -180,7 +206,6 @@ class EnginePlaybookCallbacks(callbacks.PlaybookCallbacks):
 
     def on_play_start(self, pattern):
         self.status['log'] += ["Play '%s' started" % pattern]
-        callbacks.display(callbacks.banner("PLAY [%s]" % pattern))
         callbacks.call_callback_module('playbook_on_play_start', pattern)
 
     def on_stats(self, stats):

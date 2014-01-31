@@ -2,7 +2,7 @@
 {% block title %}Run Playbook{% endblock %}
 {% block body %}
 <div class="page-header"><h1>Run Playbook</h1></div>
-<form role="form" action="#" method="POST">
+<form role="form" action="{{ url_for("launchPlaybook") }}" method="POST">
 <div class="form-group">
 <label for="playbookSelect">Playbook: </label>
 <select name="playbook" id="playbookSelect" class="form-control">
