@@ -2,11 +2,22 @@
 {% block title %}Playbooks{% endblock %}
 {% block body %}
 <div class="page-header"><h1>Playbooks</h1></div>
-<ul class="list-group">
+<table class="table table-striped table-condensed">
+<thead>
+<tr><th>Name</th><th>Action</th></tr>
+</thead>
+<tbody>
 {% for p in playbooks %}
-<li class="list-group-item">{{ p }}</li>
+<tr>
+  <td>{{ p }}</td>
+  <td><button type="button" class="btn btn-default btn-xs">
+    <span class="glyphicon glyphicon-play"></span> Play
+    </button>
+  </td>
+</tr>
 {% endfor %}
-</lu>
+</tbody>
+</tables>
 {% endblock %}
 {% block script %}
 <script type="text/javascript">
