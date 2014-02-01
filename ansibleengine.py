@@ -20,9 +20,11 @@ class AnsibleEngine:
         self.playThread = None
         self.statusQueue = Queue()
 
+    # List files in a pretty, minimal test format
     def listInventoryFiles(self):
         return [ os.path.basename(f.replace(self.base, '')) for f in self.__listInventoryFiles() ]
-
+    
+    # List absolute pathes
     def __listInventoryFiles(self):
         return glob.glob(os.path.join(self.base, "*.inv"))
 
@@ -32,6 +34,7 @@ class AnsibleEngine:
     def __listPlaybooks(self):
         return glob.glob(os.path.join(self.base, "*.yml"))
 
+    # Returns a dictionary of hosts and relevant information
     def listHosts(self, groups=False):
         allHosts = {}
         for invFile in self.__listInventoryFiles():
@@ -56,6 +59,7 @@ class AnsibleEngine:
         self.flushStatus()
         return {"status": self.status, "log": self.log}
 
+    # Get all of the status updates out of the shared Queue
     def flushStatus(self):
         try:
             while True:
@@ -72,23 +76,22 @@ class AnsibleEngine:
     def statusLog(self, msg=None, msg_status=None,status=None):
         self.statusQueue.put((msg, msg_status, status))
 
+    # Begin the thread which will run the play book
     def runPlaybook(self, inventory, playbook):
         if self.playThread and self.playThread.is_alive():
-            return "thread in progress"
+            return False
         self.flushStatus()
         self.status = "None"
         self.log = []
         self.playThread = Thread(target=self.__runPlaybook, args=(inventory, playbook))
         self.playThread.start()
+        return True
 
-    # internal command that does all the threaded lifting
+    # Internal command that does all the threaded lifting
     def __runPlaybook(self, inventory, playbook):
-        t = []
         self.statusLog(status="Initializing")
         inv = ansible.inventory.Inventory(os.path.join(self.base, inventory))
-        self.statusLog("Using inventory %s" % os.path.join(self.base, inventory), "info")
         inv.set_playbook_basedir(self.base)
-        self.statusLog("Ansible base is %s" % self.base)
         stats = callbacks.AggregateStats()
         playbook_cb = EnginePlaybookCallbacks(self.statusQueue, verbose=utils.VERBOSITY)
         runner_cb = EngineRunnerCallbacks(self.statusQueue)
@@ -99,16 +102,16 @@ class AnsibleEngine:
             callbacks=playbook_cb,
             runner_callbacks=runner_cb,
             )
+        self.statusLog("Ansible base is %s" % self.base)
+        self.statusLog("Using inventory %s" % os.path.join(self.base, inventory), "info")
         self.statusLog("Using playbook %s" % os.path.join(self.base, playbook), "info")
-        playnum = 0
         try:
             self.statusLog(status="Beginning run")
             pb.run()
             self.flushStatus()
             self.statusLog("Finished execution", status="Finished")
         except errors.AnsibleError, e:
-            print "Exited with error"
-            self.statusLog(status="Finished - Error")
+            self.statusLog("Unknown ansible error occured", status="Finished - Error")
         # Clear host cache
         for host in self.listHosts():
             try:
@@ -118,6 +121,9 @@ class AnsibleEngine:
         pb = None
         return t
 
+# Overrides ansible's callbacks
+# If more than one host will be tasked, this class will be executed in multiple processes
+# This could be done as a module in the callbacks folder
 class EngineRunnerCallbacks(callbacks.DefaultRunnerCallbacks):
     def __init__(self, statusQueue):
         self.statusQueue = statusQueue
@@ -177,7 +183,7 @@ class EnginePlaybookCallbacks(callbacks.PlaybookCallbacks):
         callbacks.call_callback_module('playbook_on_no_hosts_matched')
 
     def on_no_hosts_remaining(self):
-        callbacks.display("\nFATAL: all hosts have already failed -- aborting", color='red')
+        self.log("No hosts remaining", "danger")
         callbacks.call_callback_module('playbook_on_no_hosts_remaining')
 
     def on_task_start(self, name, is_conditional):
@@ -188,6 +194,7 @@ class EnginePlaybookCallbacks(callbacks.PlaybookCallbacks):
         callbacks.call_callback_module('playbook_on_task_start', name, is_conditional)
 
     def on_vars_prompt(self, varname, private=True, prompt=None, encrypt=None, confirm=False, salt_size=None, salt=None, default=None):
+        self.log("Attempting to prompt for variable - behavior is undefined", msg_status="danger")
 
         # if result is false and default is not None
         if not result and default:
@@ -208,13 +215,11 @@ class EnginePlaybookCallbacks(callbacks.PlaybookCallbacks):
         callbacks.call_callback_module('playbook_on_setup')
 
     def on_import_for_host(self, host, imported_file):
-        msg = "%s: importing %s" % (host, imported_file)
-        callbacks.display(msg, color='cyan')
+        self.log("Host %s is importing $s" % (host, imported_file), status="Gathering facts")
         callbacks.call_callback_module('playbook_on_import_for_host', host, imported_file)
 
     def on_not_import_for_host(self, host, missing_file):
-        msg = "%s: not importing file: %s" % (host, missing_file)
-        callbacks.display(msg, color='cyan')
+        self.log("Host %s is not importing $s" % (host, imported_file), status="Gathering facts")
         callbacks.call_callback_module('playbook_on_not_import_for_host', host, missing_file)
 
     def on_play_start(self, pattern):
@@ -223,7 +228,6 @@ class EnginePlaybookCallbacks(callbacks.PlaybookCallbacks):
 
     def on_stats(self, stats):
         callbacks.call_callback_module('playbook_on_stats', stats)
-        self.log(status = "Stopped")
     
 
 if __name__ == "__main__":
