@@ -8,6 +8,7 @@ Status - <span id="status-text" class="text-primary"></span>
 <tbody>
 </tbody>
 </table>
+<img id="spinner-gif" alt="spinner" src="{{ url_for("static", filename="img/spinner.gif") }}" class="center-block">
 {% endblock %}
 {% block script %}
 <script type="text/javascript">
@@ -15,10 +16,13 @@ function updateStatus() {
   $.getJSON("{{ url_for("runningPlaybookStatus") }}", function (data) {
     $.each(data["log"], function (i, item) {
         if (!( $("#log-item-"+i).is('*')) ) {
-          $("#log-table > tbody:last").append('<tr><td id="log-item-'+i+'">' + item + '</td></tr>');
+          $("#log-table > tbody:last").append('<tr class="'+item[1]+'"><td id="log-item-'+i+'">' + item[0] + '</td></tr>');
         }
     });
     $('#status-text').text(data["status"]);
+    if (data["status"] == "Finished") {
+        $("#spinner-gif").hide();
+    }
   });
 }  
 
