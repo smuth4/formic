@@ -42,7 +42,7 @@ def watchPlaybook():
 
 @app.route("/playbooks/run/status")
 def runningPlaybookStatus():
-    return jsonify(engine.getPlaybookStatus())
+    return jsonify(engine.getStatus())
 
 def getConfig():
     global engine
