@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block title %}Edit{% endblock %}
+{% block body %}
+<div class="page-header"><h1>Editing {{ filename }}</h1></div>
+<div class="well well-sm" id="editor">{{ filetxt }}
+</div>
+<div class="btn-group">
+<button type="button" class="btn btn-default" id="save-btn">Save</button>
+<button type="button" class="btn btn-default" id="cancel-btn">Cancel</button>
+</div>
+<img alt="Processing" src="{{ url_for("static", filename="img/spinner.gif") }}" style="display: none;" id="spinner-gif">
+{% endblock %}
+{% block script %}
+<script src="{{ url_for("static", filename="ace/ace.js") }}" type="text/javascript" charset="utf-8"></script>
+<script src="{{ url_for("static", filename="ace/ext-modelist.js") }}" type="text/javascript" charset="utf-8"></script>
+<script>
+var editor;
+saveFile = function() {
+  $('#spinner-gif').show();
+  var contents = editor.getSession().getValue();
+  $.post("{{ url_for('saveFile', filename=filename) }}", 
+    {contents: contents }, function() {
+       $('#spinner-gif').hide();
+    });
+};
+reloadFile = function() {
+  $('#spinner-gif').show();
+  document.location.reload();
+}
+$(document).ready(function () {
+  $("#save-btn").click(saveFile);
+  $("#cancel-btn").click(reloadFile);
+  editor = ace.edit("editor");
+  editor.setTheme("ace/theme/github");
+  var modelist = ace.require("ace/ext/modelist");
+  var mode = modelist.getModeForPath("{{ filename }}").mode;
+  editor.getSession().setMode(mode);
+});
+</script>
+</body>
+{% endblock %}

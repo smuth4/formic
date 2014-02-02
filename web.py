@@ -36,6 +36,24 @@ def launchPlaybook():
         return redirect(url_for('watchPlaybook'))
     return redirect(url_for('runPlaybook'))
 
+@app.route("/file/save/<path:filename>/", methods=['POST'])
+def saveFile(filename):
+    filetxt = request.form['contents']
+    with open(engine.basepath(filename), 'w') as fh:
+        fh.write(filetxt)
+    return "Success"
+
+@app.route("/file/edit/<path:filename>/")
+def editFile(filename,role=None,folder=None):
+    try:
+        with open(engine.basepath(filename)) as fh:
+            filetxt = fh.read()
+            extension = os.path.splitext(filename)[1][1:]
+    except IOError:
+        filetxt = ""
+        extension = "txt"
+    return render_template('edit.html', filename=filename, filetxt=filetxt, extension=extension)
+
 @app.route("/playbooks/watch/")
 def watchPlaybook():
     return render_template('playbooks_watch.html')

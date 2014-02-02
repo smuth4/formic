@@ -13,8 +13,10 @@
   <td>
     <a href="{{ url_for("runPlaybook", p=p) }}">
     <button type="button" class="btn btn-default btn-xs">
-    <span class="glyphicon glyphicon-play"></span> Play
-    </button></a>
+    <span class="glyphicon glyphicon-play"></span> Play</button></a>
+    <a href="{{ url_for("editFile", filename=p) }}">
+    <button type="button" class="btn btn-default btn-xs">
+    <span class="glyphicon glyphicon-pencil"></span> Edit</button></a>
   </td>
 </tr>
 {% endfor %}

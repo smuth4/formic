@@ -20,6 +20,12 @@ class AnsibleEngine:
         self.playThread = None
         self.statusQueue = Queue()
 
+    def basepath(self, filename):
+        abspath = os.path.abspath(os.path.join(self.base, filename))
+        if self.base in abspath:
+            return abspath
+        return None
+
     # List files in a pretty, minimal test format
     def listInventoryFiles(self):
         return [ os.path.basename(f.replace(self.base, '')) for f in self.__listInventoryFiles() ]
@@ -119,7 +125,6 @@ class AnsibleEngine:
             except KeyError:
                 pass
         pb = None
-        return t
 
 # Overrides ansible's callbacks
 # If more than one host will be tasked, this class will be executed in multiple processes
