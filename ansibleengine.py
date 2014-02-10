@@ -137,6 +137,23 @@ class EngineRunnerCallbacks(callbacks.DefaultRunnerCallbacks):
     def log(self, msg=None, msg_status=None, status=None):
         self.statusQueue.put((msg, msg_status, status))
 
+    def on_failed(self, host, results, ignore_errors=False):
+        print "failed"
+        self.log("Host %s failed: %s" % (host, results.copy()), msg_status="danger")
+        super(EngineRunnerCallbacks, self).on_failed(host, res, ignore_errors=ignore_errors)
+
+    def on_unreachable(self, host, res):
+        item = None
+        print res
+        if type(res) == dict:
+            item = res.get('item', None)
+        if item:
+            msg = "fatal: [%s] => (item=%s) => %s" % (host, item, res)
+        else:
+            msg = "fatal: [%s] => %s" % (host, res)
+        self.log(msg, msg_status="danger")
+        super(EngineRunnerCallbacks, self).on_unreachable(host, res)
+
     def on_ok(self, host, res):
         if res.get('changed', False):
             self.log("Changed - %s" % host, "success")
