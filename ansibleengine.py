@@ -12,8 +12,10 @@ from ansible import errors
 from ansible import utils
 
 class AnsibleEngine:
-    def __init__(self, base):
-        self.base = base
+    def __init__(self, configObject):
+        self.base = configObject.get("Ansible", "Base")
+        self.inventoryGlob = configObject.get("Ansible", "InventoryGlob")
+        self.playbookGlob = configObject.get("Ansible", "PlaybookGlob")
         self.status = "None"
         # An array of (msg, msg_status) tuples
         self.log = []
@@ -26,19 +28,23 @@ class AnsibleEngine:
             return abspath
         return None
 
-    # List files in a pretty, minimal test format
+    # List files in a pretty, minimal format
     def listInventoryFiles(self):
         return [ os.path.basename(f.replace(self.base, '')) for f in self.__listInventoryFiles() ]
     
     # List absolute pathes
     def __listInventoryFiles(self):
-        return glob.glob(os.path.join(self.base, "*.inv"))
+        return glob.glob(os.path.join(self.base, self.inventoryGlob))
 
     def listPlaybooks(self):
         return [ os.path.basename(f.replace(self.base, '')) for f in self.__listPlaybooks() ]
 
     def __listPlaybooks(self):
-        return glob.glob(os.path.join(self.base, "*.yml"))
+        return glob.glob(os.path.join(self.base, self.playbookGlob))
+
+    def listRoles(self):
+        roledir = os.path.join(self.base, 'roles/')
+        return [ name for name in os.listdir(roledir) if os.path.isdir(os.path.join(roledir, name)) ]
 
     # Returns a dictionary of hosts and relevant information
     def listHosts(self, groups=False):
@@ -53,7 +59,7 @@ class AnsibleEngine:
                 continue
             for h in hosts:
                 if groups:
-                    allHosts[h] = [g.name for g in inv.groups_for_host(h) if g.name != "all"]
+                    allHosts[h] = [g.name for g in inv.groups_for_host(h) if g.name != "all" and g.name != "ungrouped"]
                 else:
                     allHosts[h] = []
         return allHosts

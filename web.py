@@ -75,15 +75,16 @@ def getConfig():
     config_defaults = {
         "Bind": "127.0.0.1",
         "Port": "5000",
-        "Base": os.path.dirname(os.path.realpath(__file__)),
         "Debug": False,
+        "Base": os.path.dirname(os.path.realpath(__file__)),
+        "InventoryGlob": "*.inv",
+        "PlaybookGlob": "*.yml",
         }
     global config
     config = ConfigParser.SafeConfigParser(config_defaults)
     config.read('formic.ini')
     
-    base = config.get('Ansible', 'Base') 
-    engine = ansibleengine.AnsibleEngine(base)
+    engine = ansibleengine.AnsibleEngine(config)
     
 if __name__ == "__main__":
     getConfig()
