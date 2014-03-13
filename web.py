@@ -17,6 +17,14 @@ def index():
 def hosts():
     return render_template('hosts.html', hosts=engine.listHosts(groups=True))
 
+@app.route("/roles/")
+def roles():
+    return render_template('roles.html', roles=engine.listRoles())
+
+@app.route("/roles/<role>")
+def viewRole(role):
+    pass
+
 @app.route("/playbooks/")
 def playbooks():
     return render_template('playbooks.html', playbooks=engine.listPlaybooks())
@@ -66,6 +74,7 @@ def getConfig():
     global engine
     config_defaults = {
         "Bind": "127.0.0.1",
+        "Port": "5000",
         "Base": os.path.dirname(os.path.realpath(__file__)),
         "Debug": False,
         }
@@ -78,4 +87,6 @@ def getConfig():
     
 if __name__ == "__main__":
     getConfig()
-    app.run(host=config.get('Web', 'Bind'), debug=config.get('Web', 'Debug'))
+    app.run(host=config.get('Web', 'Bind'), 
+            port=int(config.get('Web', 'Port')),
+            debug=config.get('Web', 'Debug'))
